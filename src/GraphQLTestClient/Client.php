@@ -104,7 +104,7 @@ abstract class Client
         $paramStringBody = '';
         if ($query instanceof Query) {
             $paramStringBody = $this->getParamString($query->getParams());
-            $paramString =  empty($paramStringBody) ? '' : '(' . $paramStringBody . ')';
+            $paramString = empty($paramStringBody) ? '' : '(' . $paramStringBody . ')';
         }
         $queryString = sprintf('%s%s %s', $query->getName(), $paramString, $fieldString);
         return $queryString;
@@ -122,16 +122,25 @@ abstract class Client
     public function mutate(Query $query, array $multipart = null): ResponseData
     {
         $response = $this->executeQuery($this->getMutationData($query), $multipart);
-        if (array_key_exists('errors', $response)) {
-            return ResponseData::withErrors($response['data'][$query->getName()], $response['errors']);
-        }
-        return new ResponseData($response['data'][$query->getName()]);
+
+        return $this->composeResponse($response, $query->getName());
     }
 
     public function query(Query $query): ResponseData
     {
         $response = $this->executeQuery($this->getQueryData($query));
-        return new ResponseData($response['data'][$query->getName()]);
+
+        return $this->composeResponse($response, $query->getName());
+    }
+
+    protected function composeResponse($response, string $name): ResponseData
+    {
+        $data = $response['data'][$name] ?? null;
+        if (array_key_exists('errors', $response)) {
+            return ResponseData::withErrors($data, $response['errors']);
+        }
+
+        return new ResponseData($data);
     }
 
     /**
